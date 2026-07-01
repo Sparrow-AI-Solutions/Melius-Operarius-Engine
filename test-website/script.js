@@ -13,15 +13,8 @@ function renderSpecialTags() {
     document.querySelectorAll('template[data-type="form"]').forEach(el => {
         const formId = el.dataset.formId || 'default';
         // Bucket will be dynamically assigned when Pantry form is registered
-        /*
-        Example template:
-        <template data-type="form" data-form-id="contact">
-            <form action="https://getpantry.cloud/apiv1/pantry/.../basket/[BUCKET]" method="POST">
-                <input name="message" placeholder="Enter message" required>
-                <button type="submit">Send</button>
-            </form>
-        </template>
-        */
+        // Validate against forms_registry before rendering (to be updated later)
+        console.warn('Form bucket not assigned for form_id:', formId, '— call request_new_form_bucket() if missing');
     });
 
     // Process {{countdown}} tags
@@ -30,12 +23,17 @@ function renderSpecialTags() {
         if (!targetDateStr) return;
 
         const targetDate = new Date(targetDateStr).getTime();
+        if (isNaN(targetDate)) {
+            el.innerHTML = 'Invalid date';
+            return;
+        }
+
         const update = () => {
             const now = new Date().getTime();
             const distance = targetDate - now;
             if (distance < 0) {
                 el.innerHTML = 'Expired';
-                clearInterval(timer);
+                clearInterval(Number(el.dataset.timerId));
                 return;
             }
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
@@ -45,8 +43,8 @@ function renderSpecialTags() {
             el.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
         };
         update();
-        const timer = setInterval(update, 1000);
-        el.dataset.timer = JSON.stringify({ timerId: timer });
+        const timerId = setInterval(update, 1000);
+        el.dataset.timerId = timerId;
     });
 
     // Process {{live_time}} tags
